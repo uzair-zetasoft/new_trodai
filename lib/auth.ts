@@ -4,9 +4,10 @@ import { signIn, signOut } from "@/auth"
 import { prisma } from "./prisma"
 import bcrypt from "bcryptjs"
 import { redirect } from "next/navigation"
+import { Role } from "./constants"
 
 export const login = async () => {
-    await signIn("google", { redirectTo: "/home" })
+    await signIn("google", { redirectTo: "/dashboard/home" })
 }
 
 export const loginOut = async () => {
@@ -15,12 +16,37 @@ export const loginOut = async () => {
 
 export const loginWithCredentials = async (email: string, password: string) => {
     try {
+        // First try signing in
         await signIn("credentials", {
             email,
             password,
             redirect: false
         })
-        return { success: true }
+        
+        // Get basic user information after successful login
+        const user = await prisma.user.findUnique({
+            where: { email }
+        })
+        
+        if (!user) {
+            return { success: false, error: "User not found" }
+        }
+        
+        // Create a safe user object with only the data we need
+        const safeUser = {
+            id: user.id,
+            email: user.email,
+            name: user.name || "",
+            // For role, check if it exists in the user object or provide a default
+            role: user.hasOwnProperty('role') 
+                ? (user as any).role 
+                : Role.USER // Default role if not set
+        }
+        
+        return { 
+            success: true,
+            user: safeUser
+        }
     } catch (error) {
         console.error("Error during credential login:", error)
         return { success: false, error: "Invalid email or password" }

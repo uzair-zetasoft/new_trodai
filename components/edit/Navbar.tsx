@@ -15,7 +15,7 @@ export default function Navbar({ selectedTool, setSelectedTool, videoTitle = "Un
     <div className="flex items-center justify-between bg-slate50 p-3">
       {/* Left Section */}
       <div className="flex items-center gap-4">
-        <Link href="/home" className="border shadow-md py-2 px-3 font-medium flex items-center justify-center gap-1 rounded-md">
+        <Link href="/dashboard/home" className="border shadow-md py-2 px-3 font-medium flex items-center justify-center gap-1 rounded-md">
           <ChevronLeft size={20} /> Leave
         </Link>
         <div className="flex items-center gap-2 text-yellow-500">

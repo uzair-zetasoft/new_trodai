@@ -1,14 +1,28 @@
 "use client";
-import Link from "next/link";
-import { useCallback, useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ChevronDown, UploadCloud, HelpCircle, FolderPlus, Search, Import, X, } from "lucide-react";
+import { 
+  ChevronDown, 
+  UploadCloud, 
+  HelpCircle, 
+  FolderPlus, 
+  Search, 
+  Import, 
+  X, 
+  LayoutDashboard, 
+  ChevronLeft, 
+  ChevronRight,
+  Download,
+  Edit2
+} from "lucide-react";
 import { GrSchedule } from "react-icons/gr";
 import HomeHeader from "@/components/HomeHeader";
 import { useDropzone } from "react-dropzone";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Role } from "@/lib/constants";
 
-export default function Sidebar() {
+export default function HomeSidebar() {
   const [videosOpen, setVideosOpen] = useState(false);
   const [folderOpen, setFolderOpen] = useState(false);
   const [popUpOpen, setPopUpOpen] = useState(false);
@@ -20,6 +34,9 @@ export default function Sidebar() {
   const [clipsList, setClipsList] = useState<string[]>([]);
   const [subtitlesList, setSubtitlesList] = useState<string[]>([]);
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const clipsPerPage = 6;
   const [uploadedVideo, setUploadedVideo] = useState<{
     file: File | null;
     url: string;
@@ -29,6 +46,27 @@ export default function Sidebar() {
   }>({ file: null, url: "", status: null });
   const router = useRouter();
 
+  // Calculate total pages
+  const totalPages = Math.ceil(clipsList.length / clipsPerPage);
+  
+  // Get current clips
+  const indexOfLastClip = currentPage * clipsPerPage;
+  const indexOfFirstClip = indexOfLastClip - clipsPerPage;
+  const currentClips = clipsList.slice(indexOfFirstClip, indexOfLastClip);
+  
+  // Change page
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+  
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
   const clearStorage = () => {
     localStorage.removeItem('clipsList');
     localStorage.removeItem('subtitlesList');
@@ -36,7 +74,21 @@ export default function Sidebar() {
     setClipsList([]);
     setSubtitlesList([]);
     setUploadedVideo({ file: null, url: "", status: null });
+    setCurrentPage(1);
   };
+
+  // Check if user is admin
+  useEffect(() => {
+    try {
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const user = JSON.parse(userData);
+        setIsAdmin(user.role === Role.ADMIN);
+      }
+    } catch (error) {
+      console.error("Error checking admin status:", error);
+    }
+  }, []);
 
   // Load saved data from localStorage on component mount
   useEffect(() => {
@@ -88,7 +140,7 @@ export default function Sidebar() {
   // Handle YouTube link import
   const handleImportYoutube = () => {
     if (youtubeLink.trim() !== "") {
-      router.push(`/edit?video=${encodeURIComponent(youtubeLink)}`);
+      router.push(`/dashboard/(editor)/edit?video=${encodeURIComponent(youtubeLink)}`);
     }
   };
 
@@ -161,16 +213,19 @@ export default function Sidebar() {
       image: <img src="/short_to_short.webp" alt="Short to Short" className="w-40 mx-auto" />,
       altText: "Short to Short",
       label: "Subtitle and edit my Short",
+      onClickHandler: () => {}
     },
     {
       image: <img src="/video_to_short.webp" alt="Short to Short" className="w-40 mx-auto" />,
       altText: "Video to Short",
       label: "Long videos to Short",
+      onClickHandler: () => setImportVideo(true)
     },
     {
       image: <img src="/faceless.webp" alt="Short to Short" className="h-32 -mt-1 mx-auto rounded-md" />,
       altText: "Faceless Short",
       label: "Create Faceless video",
+      onClickHandler: () => {}
     },
   ];
 
@@ -190,6 +245,7 @@ export default function Sidebar() {
               <div key={index} className="relative text-center overflow-hidden" >
               <motion.button
                 whileHover={{ scale: 1.05 }}
+                onClick={btn.onClickHandler}
                 className="relative px-10 py-1 bg-bgWhite rounded-lg shadow-lg shadow-gray-700/10 border text-center cursor-pointer overflow-hidden h-36 w-64"
               >
                 <motion.p
@@ -222,7 +278,7 @@ export default function Sidebar() {
                 <Search size={18} className="absolute top-2 text-gray-500 left-2" />
                 <input type="text" placeholder="Search" className="w-full p-1 pl-8 border rounded-md" />
               </div>
-              <Link href="/home/schedule" className="flex gap-2 items-center border px-3 py-1 rounded-md"><GrSchedule /> Schedule</Link>
+              <Link href="/dashboard/schedule" className="flex gap-2 items-center border px-3 py-1 rounded-md"><GrSchedule /> Schedule</Link>
               <button 
                 onClick={clearStorage}
                 className="flex gap-2 items-center border px-3 py-1 rounded-md text-red-500 hover:bg-red-50"
@@ -230,75 +286,98 @@ export default function Sidebar() {
                 Clear All
               </button>
             </div>
-
           </div>
 
           {clipsList.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-              {clipsList.map((clipFilename, index) => {
-                const videoUrl = `http://localhost:8000/api/v1/videos/${encodeURIComponent(clipFilename)}`;
-                const subtitleUrl = subtitlesList[index] ? 
-                  `http://localhost:8000/api/v1/subtitles/${encodeURIComponent(subtitlesList[index])}` : 
-                  null;
-                return (
-                <div key={index} className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  <div className="relative aspect-[9/16] bg-black">
-                    <video 
-                      className="w-full h-full object-cover"
-                      controls
-                      src={videoUrl}
-                      onError={(e) => {
-                        console.error("Video loading error for:", clipFilename, e);
-                      }}
-                    />
-                  </div>
-                  <div className="p-3">
-                    <h3 className="font-medium text-sm">Short Clip {index + 1}</h3>
-                    <p className="text-xs text-gray-500 mt-1 truncate">{clipFilename}</p>
-                    <div className="flex justify-between items-center mt-2">
-                      <a 
-                        href={videoUrl}
-                        download={clipFilename}
-                        className="text-blue-500 hover:text-blue-600 text-xs font-medium"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Download
-                      </a>
-                      <button 
-                        onClick={() => {
-                          // Get the video filename without the "final_" prefix
-                          const originalVideoName = clipFilename.replace('final_', '');
-                          // Get the corresponding subtitle filename
-                          const subtitleFile = subtitlesList[index];
-                          console.log("Subtitle file in home:", subtitleFile);
-                          
-                          // Construct the URLs
-                          const videoUrl = `http://localhost:8000/api/v1/videos/${encodeURIComponent(clipFilename)}`;
-                          const srtUrl = subtitleFile ? 
-                            `http://localhost:8000/api/v1/subtitles/${encodeURIComponent(subtitleFile)}` : '';
-                          
-                          console.log("Constructed srtUrl:", srtUrl);
-                          
-                          // Navigate to edit page with both video and subtitle parameters
-                          const editUrl = `/edit?videoUrl=${encodeURIComponent(videoUrl)}&videoName=${encodeURIComponent(originalVideoName)}`;
-                          const finalUrl = srtUrl ? `${editUrl}&srtUrl=${encodeURIComponent(srtUrl)}` : editUrl;
-                          console.log("Final navigation URL:", finalUrl);
-                          
-                          router.push(finalUrl);
-                        }}
-                        className="text-blue-500 hover:text-blue-600 text-xs font-medium"
-                      >
-                        Edit
-                      </button>
-                      <button className="text-green-500 hover:text-green-600 text-xs font-medium">
-                        Share
-                      </button>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-6">
+                {currentClips.map((clipFilename, index) => {
+                  const videoUrl = `http://localhost:8000/api/v1/videos/${encodeURIComponent(clipFilename)}`;
+                  const subtitleUrl = subtitlesList[indexOfFirstClip + index] ? 
+                    `http://localhost:8000/api/v1/subtitles/${encodeURIComponent(subtitlesList[indexOfFirstClip + index])}` : 
+                    null;
+                  const actualIndex = indexOfFirstClip + index;
+                  
+                  return (
+                    <div key={index} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div className="relative aspect-[9/16] bg-black">
+                        <video 
+                          className="w-full h-full object-cover"
+                          controls
+                          src={videoUrl}
+                          onError={(e) => {
+                            console.error("Video loading error for:", clipFilename, e);
+                          }}
+                        />
+                      </div>
+                      <div className="p-2">
+                        <h3 className="font-medium text-sm">Short Clip {actualIndex + 1}</h3>
+                        <div className="flex justify-between items-center mt-2">
+                          <a 
+                            href={videoUrl}
+                            download={clipFilename}
+                            className="flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-600 font-medium px-3 py-1.5 rounded-md transition-colors text-xs"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Download size={14} />
+                            <span>Download</span>
+                          </a>
+                          <button 
+                            onClick={() => {
+                              // Get the video filename without the "final_" prefix
+                              const originalVideoName = clipFilename.replace('final_', '');
+                              // Get the corresponding subtitle filename
+                              const subtitleFile = subtitlesList[actualIndex];
+                              
+                              // Construct the URLs
+                              const videoUrl = `http://localhost:8000/api/v1/videos/${encodeURIComponent(clipFilename)}`;
+                              const srtUrl = subtitleFile ? 
+                                `http://localhost:8000/api/v1/subtitles/${encodeURIComponent(subtitleFile)}` : '';
+                              
+                              // Navigate to edit page with both video and subtitle parameters
+                              const editUrl = `/dashboard/edit?videoUrl=${encodeURIComponent(videoUrl)}&videoName=${encodeURIComponent(originalVideoName)}`;
+                              const finalUrl = srtUrl ? `${editUrl}&srtUrl=${encodeURIComponent(srtUrl)}` : editUrl;
+                              
+                              router.push(finalUrl);
+                            }}
+                            className="flex items-center gap-1 bg-purple-50 hover:bg-purple-100 text-purple-600 font-medium px-3 py-1.5 rounded-md transition-colors text-xs"
+                          >
+                            <Edit2 size={14} />
+                            <span>Edit</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  );
+                })}
+              </div>
+              
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center mt-6 gap-4">
+                  <button 
+                    onClick={goToPreviousPage} 
+                    disabled={currentPage === 1}
+                    className={`p-2 rounded-md border ${currentPage === 1 ? 'text-gray-400 border-gray-200' : 'text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  
+                  <span className="text-sm font-medium">{currentPage} of {totalPages}</span>
+                  
+                  <button 
+                    onClick={goToNextPage} 
+                    disabled={currentPage === totalPages}
+                    className={`p-2 rounded-md border ${currentPage === totalPages ? 'text-gray-400 border-gray-200' : 'text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                  
+                  <span className="text-sm text-gray-500">Videos per page: <span className="font-medium">6</span></span>
                 </div>
-              )})}
-            </div>
+              )}
+            </>
           ) : (
             <button 
               onClick={() => setImportVideo(true)}
@@ -321,12 +400,9 @@ export default function Sidebar() {
                 <h6 className="text-lg font-medium">Imported Videos</h6>
                 <p className="text-sm mt-1">Out of your imported videos, you can create shorts</p>
               </div>
-
             </div>
 
             <button onClick={() => setImportVideo(true)} className="flex gap-2 items-center border px-3 py-1 rounded-md"><Import size={19} /> Import Videos</button>
-
-
           </div>
 
           {videosOpen && (
@@ -389,8 +465,6 @@ export default function Sidebar() {
             <button className="flex gap-2 items-center border px-3 py-1 rounded-md"
               onClick={() => setPopUpOpen(prev => !prev)}
             ><FolderPlus size={18} /> New Folder</button>
-
-
           </div>
 
           {folderOpen && (
@@ -403,19 +477,26 @@ export default function Sidebar() {
 
       {/* Import Video Modal */}
       {importVideo && (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white shadow-md rounded-lg p-6 w-[400px]">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Import Video</h3>
-              <button onClick={() => setImportVideo(false)} disabled={isUploading}>
-                <X size={20} className="text-gray-500 hover:text-gray-800" />
+        <div className="fixed inset-0 bg-gray-900/75 backdrop-blur-sm flex justify-center items-center z-50">
+          <div className="bg-white shadow-xl rounded-2xl p-6 w-[480px] animate-fadeIn">
+            <div className="flex justify-between items-center border-b border-gray-100 pb-4">
+              <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                <Import size={20} className="text-purple-500" />
+                Import Video
+              </h3>
+              <button 
+                onClick={() => setImportVideo(false)} 
+                disabled={isUploading}
+                className="text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-full p-1.5 transition-colors"
+              >
+                <X size={18} />
               </button>
             </div>
 
             {isUploading ? (
-              <div className="mt-4">
+              <div className="mt-6">
                 {previewUrl && (
-                  <div className="relative w-full aspect-[9/16] mb-4 bg-black rounded-lg overflow-hidden">
+                  <div className="relative w-full aspect-[9/16] mb-6 bg-black rounded-xl overflow-hidden flex items-center justify-center shadow-md">
                     <video 
                       src={previewUrl}
                       className="w-full h-full object-contain"
@@ -426,51 +507,61 @@ export default function Sidebar() {
                     />
                   </div>
                 )}
-                <div className="text-center">
-                  <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <p className="text-gray-700 font-medium">{uploadStatus}</p>
+                <div className="text-center py-4">
+                  <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-700 font-medium">{uploadStatus || "Processing your video..."}</p>
                 </div>
               </div>
             ) : (
               <>
                 {/* YouTube Import Section */}
-                <div className="mt-4">
-                  <label className="text-gray-600 font-medium">Paste YouTube Link</label>
-                  <input
-                    type="text"
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    className="w-full border p-2 mt-2 rounded-md"
-                    value={youtubeLink}
-                    onChange={(e) => setYoutubeLink(e.target.value)}
-                  />
+                <div className="mt-6">
+                  <label className="text-gray-700 font-medium block mb-2">Paste YouTube Link</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      className="w-full border border-gray-300 p-3 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      value={youtubeLink}
+                      onChange={(e) => setYoutubeLink(e.target.value)}
+                    />
+                  </div>
                   <button
                     onClick={handleImportYoutube}
-                    className="w-full bg-blue-500 text-white mt-2 py-2 rounded-md hover:bg-blue-600 transition"
+                    className="w-full bg-purple-600 text-white mt-3 py-3 rounded-lg hover:bg-purple-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
                   >
+                    <Import size={18} />
                     Import from YouTube
                   </button>
                 </div>
 
                 {/* OR Divider */}
-                <div className="flex items-center my-4">
-                  <hr className="flex-grow border-gray-300" />
-                  <span className="mx-2 text-gray-500">OR</span>
-                  <hr className="flex-grow border-gray-300" />
+                <div className="flex items-center my-6">
+                  <div className="flex-grow h-0.5 bg-gray-200"></div>
+                  <span className="mx-4 text-gray-500 font-medium">OR</span>
+                  <div className="flex-grow h-0.5 bg-gray-200"></div>
                 </div>
 
                 {/* Drag & Drop Upload Section */}
                 <div
                   {...getRootProps()}
-                  className="border-2 border-dashed border-gray-400 p-6 rounded-md text-center cursor-pointer hover:bg-gray-100 transition"
+                  className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
+                    isDragActive 
+                      ? "border-purple-500 bg-purple-50" 
+                      : "border-gray-300 hover:border-purple-400 hover:bg-gray-50"
+                  }`}
                 >
                   <input {...getInputProps()} />
                   {isDragActive ? (
-                    <p className="text-gray-700">Drop the file here...</p>
+                    <div className="py-4">
+                      <UploadCloud size={48} className="mx-auto text-purple-500 mb-2" />
+                      <p className="text-purple-600 font-medium">Drop your file here</p>
+                    </div>
                   ) : (
-                    <div>
-                      <UploadCloud size={40} className="mx-auto text-gray-500" />
-                      <p className="text-gray-700">Drag & Drop a video file</p>
-                      <p className="text-gray-500">or click to select a file</p>
+                    <div className="py-4">
+                      <UploadCloud size={48} className="mx-auto text-gray-400 mb-3" />
+                      <p className="text-gray-700 font-medium mb-1">Drag & Drop a video file</p>
+                      <p className="text-gray-500 text-sm">or click to select a file</p>
                     </div>
                   )}
                 </div>
@@ -479,7 +570,6 @@ export default function Sidebar() {
           </div>
         </div>
       )}
-
 
       {/* pop up */}
       {popUpOpen && (
@@ -495,10 +585,9 @@ export default function Sidebar() {
                 Cancel
               </button>
             </div>
-
           </div>
         </div>
       )}
     </div>
   );
-}
+} 

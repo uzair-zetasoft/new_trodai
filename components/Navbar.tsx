@@ -83,7 +83,6 @@ const Navbar = () => {
             Our Product <FaChevronDown size={12} />
           </li>
           <Link href={"/pricing"} className="cursor-pointer font-medium text-base hover:bg-gray-100/25 rounded-lg p-2 px-3">Pricing</Link>
-          <Link href={"/affiliates"} className="cursor-pointer font-medium text-base hover:bg-gray-100/25 rounded-lg p-2 px-3">Affiliates</Link>
           <Link href={"/guides"} className="cursor-pointer font-medium text-base hover:bg-gray-100/25 rounded-lg p-2 px-3">Guides</Link>
 
         </ul>
@@ -114,7 +113,6 @@ const Navbar = () => {
               Our Product <FaChevronDown size={14} />
             </li>
             <Link href={"/pricing"}>Pricing</Link>
-            <Link href={"/affiliates"}>Affiliates</Link>
             <Link href={"/guides"}>Guides</Link>
             <Link href={"/login"}>Log in</Link>
           </ul>

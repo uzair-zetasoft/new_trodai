@@ -247,14 +247,13 @@ console.log("subtitle in edit page: ",srtUrl)
             <VideoControls videoRef={videoRef} />
             <Timeline 
               videoUrl={videoSrc} 
-              subtitles={subtitles} 
-              onCutVideo={handleCutVideo} 
-              videoRef={videoRef} 
+              subtitles={subtitles}
+              videoRef={videoRef}
+              onCutVideo={handleCutVideo}
             />
           </div>
         </div>
       </div>
     </div>
   );
-}
-
+} 

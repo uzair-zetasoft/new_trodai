@@ -3,6 +3,7 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "./lib/prisma";
 import bcrypt from "bcryptjs";
+import { Role } from './lib/constants';
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
     providers: [
@@ -45,6 +46,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                 id: user.id,
                 email: user.email,
                 name: user.name,
+                role: user.role,
               };
             } catch (error) {
               console.error("Error during credential login:", error);
@@ -72,16 +74,24 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
 
             // If user doesn't exist, create a new one
             if (!existingUser) {
-              await prisma.user.create({
+              const newUser = await prisma.user.create({
                 data: {
                   email: user.email,
                   name: user.name || "",
                   profileImage: user.image || "",
+                  role: Role.USER, // Explicitly set role for new users
                   createdAt: new Date(),
                   updatedAt: new Date()
                 },
               });
+              
+              // Add role to user object
+              user.role = Role.USER;
+              return true;
             }
+            
+            // Add role to user object for Google authentication
+            user.role = existingUser.role;
             
             return true;
           } catch (error) {
@@ -94,19 +104,30 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       },
       async session({ session, token }) {
         if (session.user && token.sub) {
+          // Ensure ID is set
           session.user.id = token.sub;
+          
+          // Add role from token to session with fallback to USER
+          session.user.role = (token.role as Role) || Role.USER;
+          
+          console.log("Session user role:", session.user.role);
         }
         return session;
       },
       async jwt({ token, user }) {
         if (user) {
+          // Add ID and role to token
           token.id = user.id;
+          token.role = user.role || Role.USER;
+          
+          console.log("JWT user role:", user.role);
         }
         return token;
       }
     },
     pages: {
       signIn: '/login',
+      error: '/unauthorized',
     },
     session: {
       strategy: "jwt"

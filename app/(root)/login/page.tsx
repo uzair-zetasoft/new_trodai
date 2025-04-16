@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { FaGoogle } from "react-icons/fa";
@@ -13,7 +13,39 @@ const LoginForm = () => {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [checkingAuth, setCheckingAuth] = useState(true);
     const router = useRouter();
+
+    // Check if user is already logged in
+    useEffect(() => {
+        async function checkSession() {
+            try {
+                // Use the client-side login functions instead of direct auth() call
+                // This prevents headers being called outside request scope
+                const userData = localStorage.getItem('userData');
+                if (userData) {
+                    try {
+                        const user = JSON.parse(userData);
+                        if (user.role === "ADMIN") {
+                            router.push("/admin/dashboard");
+                        } else {
+                            router.push("/dashboard/home");
+                        }
+                        return;
+                    } catch (e) {
+                        // Invalid JSON, clear it
+                        localStorage.removeItem('userData');
+                    }
+                }
+            } catch (err) {
+                console.error("Error checking authentication:", err);
+            } finally {
+                setCheckingAuth(false);
+            }
+        }
+        
+        checkSession();
+    }, [router]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,18 +58,44 @@ const LoginForm = () => {
             return;
         }
 
-        const result = await loginWithCredentials(email, password);
-        
-        if (!result.success) {
-            setError(result.error || "Failed to login");
+        try {
+            const result = await loginWithCredentials(email, password);
+            
+            if (!result.success) {
+                setError(result.error || "Failed to login");
+                setLoading(false);
+                return;
+            }
+            
+            // Store minimal user data in localStorage for client-side checks
+            if (result.user) {
+                localStorage.setItem('userData', JSON.stringify({
+                    email: result.user.email,
+                    role: result.user.role
+                }));
+                
+                // Manually redirect based on role
+                if (result.user.role === "ADMIN") {
+                    router.push("/admin/dashboard");
+                } else {
+                    router.push("/dashboard/home");
+                }
+            }
+        } catch (err) {
+            console.error("Login error:", err);
+            setError("An unexpected error occurred");
             setLoading(false);
-            return;
         }
-        
-        // Successful login, redirect to home
-        router.push("/home");
-        setLoading(false);
     };
+
+    // Show loading state while checking auth
+    if (checkingAuth) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p>Loading...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex justify-center items-center min-h-screen p-6">
@@ -49,7 +107,7 @@ const LoginForm = () => {
                 className=" p-8 rounded-xl shadow-2xl border border-gray-300/50 w-full max-w-md"
             >
                 {/* Header */}
-                <h1 className="text-2xl font-bold text-center">Log in to Editur</h1>
+                <h1 className="text-2xl font-bold text-center">Log in to Trod</h1>
                 <p className="text-gray-400 text-center mt-2">
                     Create shareable clips in minutes. Free forever. No credit card required.
                 </p>

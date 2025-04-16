@@ -95,7 +95,7 @@ const Footer = () => {
             <h3 className="text-xl font-semibold mb-4">Support & Feedback</h3>
             <p className="text-gray-300 mb-4">
               You can expect a response from our 💛 lovely team 💛 within the next <strong>2 to 12 hours</strong>,
-              but usually we’re quicker than that!
+              but usually we're quicker than that!
             </p>
             <div className="flex flex-col gap-4">
               <Link href="/contact" className="bg-gray-800 p-3 rounded-lg hover:bg-gray-700">

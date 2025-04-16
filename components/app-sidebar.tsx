@@ -49,97 +49,33 @@ const data = {
   logo: {
     logo: "/trod.png",
     name: "",
-    link: "/home"
+    link: "/dashboard/home"
   },
   navMain: [
     {
       title: "Home",
-      url: "/home",
+      url: "/dashboard/home",
       icon: HomeIcon,
       isActive: true,
-      // items: [
-      //   {
-      //     title: "History",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Starred",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Settings",
-      //     url: "#",
-      //   },
-      // ],
     },
     {
       title: "Publish & Schedule",
-      url: "/shedule",
+      url: "/dashboard/schedule",
       icon: GrSchedule,
-      // items: [
-      //   {
-      //     title: "Genesis",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Explorer",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Quantum",
-      //     url: "#",
-      //   },
-      // ],
     },
     {
       title: "Automated Series",
-      url: "/automated-series",
+      url: "/dashboard/automated-series",
       icon: MdAutoFixNormal,
-      // items: [
-      //   {
-      //     title: "Introduction",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Get Started",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Tutorials",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Changelog",
-      //     url: "#",
-      //   },
-      // ],
     },
     {
       title: "Services",
-      url: "/services",
+      url: "/dashboard/services",
       icon: GrServices,
-      // items: [
-      //   {
-      //     title: "General",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Team",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Billing",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Limits",
-      //     url: "#",
-      //   },
-      // ],
     },
     {
       title: "Pricing",
-      url: "/pricing",
+      url: "/dashboard/pricing",
       icon: DollarSign,
     },
   ],
@@ -172,7 +108,7 @@ const data = {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        {/* <NavProjects projects={data.projects} /> */}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data?.user} />
